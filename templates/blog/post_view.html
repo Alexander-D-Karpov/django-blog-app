@@ -1,0 +1,247 @@
+{% extends "blog/base_blog.html" %}
+{% load markdown_extras %}
+{% block extra_head %}
+    <meta property="og:title" content="{{ post.name }}" />
+    <meta property="og:site_name" content="akarpov.ru"/>
+    <meta property="og:description" content="Post by {{ post.creator.username }}, viewed {{ post_views }} times" />
+    {% if post.image %}<meta property="og:image" content="{{ post.image.url }}" />{% endif %}
+    <style>
+        .center {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            width: 75%;
+        }
+        .rate {
+            border-bottom-right-radius: 12px;
+            border-bottom-left-radius: 12px
+        }
+
+        .rating {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: left;
+        }
+
+        .rating>input {
+            display: none
+        }
+
+        .rating>label {
+            position: relative;
+            width: 1em;
+            font-size: 30px;
+            font-weight: 300;
+            color: #FFD600;
+            cursor: pointer
+        }
+
+        .rating>label::before {
+            content: "\2605";
+            position: absolute;
+            opacity: 0
+        }
+
+        .rating>label:hover:before,
+        .rating>label:hover~label:before {
+            opacity: 1 !important
+        }
+
+        .rating>input:checked~label:before {
+            opacity: 1
+        }
+
+        .rating:hover>input:checked~label:before {
+            opacity: 0.4
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="container">
+        {% if post.image %}
+            <br>
+            {% if post.image %}<img src="{{ post.image.url }}" style="max-height: 32rem; object-fit: cover" class="center" alt="post image">{% endif %}
+        {% endif %}
+        <div class="card border-0 shadow my-5">
+            <div class="card-body p-5">
+
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url "profile" post.creator.username %}">{{ post.creator.username }}</a></li>
+                        <li class="breadcrumb-item"><a href="{% url "index" %}?user={{ post.creator.username }}">posts</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">{{ post.title }}</li>
+                    </ol>
+                </nav>
+                <h1 class="fw-light fs-1">{{ post.title|upper }}</h1>
+                <p>Created by <a href="{% url "profile" post.creator %}">{{ post.creator }}</a></p>
+                <p>Viewed {{ post_views }} times</p>
+                {% if post.isMD %}
+                    <p class="lead">{{ post.body | markdown | safe }}</p>
+                {% else %}
+                    <p class="lead">{{ post.body }}</p>
+                {% endif %}
+            </div>
+        <div class="row mx-5">
+            <div class=" col">
+                <h6 class="mb-0">User rating:</h6> <h2>{{ post.rating }}</h2>
+            </div>
+            {% if user.is_authenticated %}
+                <form class="col" name="frm" method="POST" action="{% url "rate_post" post.slug %} ">
+                {% csrf_token %}
+                    <div class="rate">
+                        <h6 class="mb-0">Rate post</h6>
+                        <div class="rating">
+                            {% for i in range%}
+                            <input onchange="this.form.submit()" {% if user_rate == i %} checked {% endif %}type="radio"
+                                   name="rating" value="{{ i }}" id="{{ i }}"><label for="{{ i }}">☆</label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </form>
+            {% endif %}
+        {% if files %}
+            <h3 class="text-success">Attached files</h3>
+            <div class="row">
+            {% for file in files %}
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            {% if file.extension == ".jpeg" or file.extension == ".png" or file.extension == ".jpg" %}
+                                <div class="col-md-4">
+                                    <br>
+                                    <img src="{{ file.file.url }}" class="img-fluid rounded-start mb-3">
+                                </div>
+                            {% endif %}
+                            <h5 class="card-title">{{ file.name }}</h5>
+                            <p class="card-text"> {{ file.date }} - {{ file.file.size | filesizeformat }}</p>
+                            <p> {{ file.description }}</p>
+                            <a href="{{ file.file.url }}" download>download</a>
+                            <a href="{% url "file_view" slug=file.slug %}">get link</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+            <hr/>
+        {% endif %}
+            <div class="">
+                <div class="row">
+                    <div class="">
+                        <div class="blog-comment">
+                            <hr/>
+                            <ul class="comments">
+                                <div class="card-body">
+                                    {% if new_comment %}
+                                        <div class="alert alert-success" role="alert">
+                                          Thanks for your comment, it is awaiting moderation. To post comments quicker <a href="{% url "login" %}">login</a> or <a href="{% url "register" %}">register</a>
+                                        </div>
+                                    {% else %}
+                                        <!-- comment form -->
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            {% if not user.is_authenticated %}
+                                                <div class="form-floating">
+                                                    <input name="username" class="form-control" placeholder="Your name"
+                                                           id="floatingTextarea"/>
+                                              <label for="floatingTextarea">Name</label>
+                                            </div>
+                                                <br>
+                                            {% endif %}
+                                                <div class="form-floating">
+                                              <textarea name="body" class="form-control" placeholder="Leave a comment here" id="floatingTextarea2"></textarea>
+                                              <label for="floatingTextarea2">Comment</label>
+                                            </div>
+                                            <br>
+                                            <button type="submit" class="btn btn-success">Submit</button>
+                                        </form>
+                                        <!-- end form -->
+                                    {% endif %}
+                                </div>
+                            </ul>
+                        </div>
+                    {% if user.is_authenticated %}
+                        <form method="post" action="{% url "rate_comment" post.slug %}">
+                        {% csrf_token %}
+                        {% for comment in comments %}
+                            <div class="comments" style="padding: 10px;">
+                                <p class="font-weight-bold">
+                                    {% if comment.from_user %}
+                                        <a href="{% url "profile" comment.name %}">{{ comment.name }}</a>
+                                    {% else %}
+                                        {{ comment.name }}
+                                    {% endif %}
+                                    <span class=" text-muted font-weight-normal">
+                                      {{ comment.created_on }} {{ comment.sum_rate }}
+                                    </span>
+                                </p>
+                                {{ comment.body }}
+                                {% if comment in comment_rates_up %}
+                                <button name="comment_up" type="submit" value="{{ comment.id }}" style="padding: 0; border: none; background: none;"><i class="bi bi-hand-thumbs-up-fill"></i></button>
+                                {% else %}
+                                <button name="comment_up" type="submit" value="{{ comment.id }}" style="padding: 0; border: none; background: none;"><i class="bi bi-hand-thumbs-up"></i></button>
+                                {% endif %}
+
+                                {% if comment in comment_rates_down %}
+                                <button name="comment_down" type="submit" value="{{ comment.id }}" style="padding: 0; border: none; background: none;"><i class="bi bi-hand-thumbs-down-fill"></i></button>
+                                {% else %}
+                                <button name="comment_down" type="submit" value="{{ comment.id }}" style="padding: 0; border: none; background: none;"><i class="bi bi-hand-thumbs-down"></i></button>
+                                {% endif %}
+                            </div>
+                            <br>
+                        {% endfor %}
+                        </form>
+                    {% else %}
+                        {% for comment in comments %}
+                            <div class="comments" style="padding: 10px;">
+                                <p class="font-weight-bold">
+                                    {% if comment.from_user %}
+                                        <a href="{% url "profile" comment.name %}">{{ comment.name }}</a>
+                                    {% else %}
+                                        {{ comment.name }}
+                                    {% endif %}
+                                    <span class=" text-muted font-weight-normal">
+                                      {{ comment.created_on }} --- {{ comment.sum_rate }}
+                                    </span>
+                                </p>
+                                {{ comment.body }}
+                            </div>
+                            <br>
+                        {% endfor %}
+                    {% endif %}
+
+            <ul class="pagination m-4">
+            {% if comments.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?comment=1" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?comment={{ comments.previous_page_number }}" aria-label="Previous">
+                        <span aria-hidden="true">{{ comments.previous_page_number }}</span>
+                    </a>
+                </li>
+            {% endif %}
+            {% if comments.has_next or comments.has_previous %}
+                <li class="page-item"><a class="page-link">{{ comments.number }}</a></li>
+            {% endif %}
+            {% if comments.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?comment={{ comments.next_page_number }}" aria-label="Next">
+                        <span aria-hidden="true">{{ comments.next_page_number }}</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?comment={{ p.num_pages }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

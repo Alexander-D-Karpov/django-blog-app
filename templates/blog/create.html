@@ -1,0 +1,74 @@
+{% extends "blog/base_blog.html" %}
+{% load static %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/remarkable/1.7.1/remarkable.min.js"></script>
+{% endblock %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+      <div class="row align-items-start">
+          <div class="col-4">
+          <form method="post" enctype="multipart/form-data" class="was-validated">
+              {% csrf_token %}
+              <div class="mb-3">
+              <label for="exampleFormControlInput1" class="form-label">Name</label>
+              <input minlength="0" maxlength="150" title="heading cant be more than 15  0 characters" name="heading" type="text" class="form-control" id="exampleFormControlInput1" placeholder="example heading">
+            </div>
+            <div class="mb-3">
+              <label for="exampleFormControlTextarea1" class="form-label">Text</label>
+              <textarea name="text" class="form-control" id="exampleFormControlTextarea1" rows="10" required></textarea>
+            </div>
+              <input name="image" class="form-control mb-3" accept="image/*" type='file' id="imgInp"/>
+              <button class="btn btn-success">Save</button>
+        </form>
+        </div>
+        <div class="col-6">
+            <div>
+                <h1 id="headingPreview"></h1>
+          <div id="preview"></div>
+            </div>
+              <img id="blah" class="img-fluid" src="#" alt="" />
+        </div>
+      </div>
+
+<script>
+    let editorContent=document.getElementById('exampleFormControlTextarea1')
+    let headingEdit=document.getElementById('exampleFormControlInput1')
+    const previewContent=document.getElementById('preview')
+    const headingPreview=document.getElementById('headingPreview')
+    let heightLimit = 600;
+    const md = new Remarkable({
+        typographer: false,
+        quotes: '“”‘’'
+    });
+
+    function changePreview()
+    {
+        editorContent.style.height = ""; /* Reset the height*/
+        editorContent.style.height = Math.min(editorContent.scrollHeight, heightLimit) + "px";
+        let editorText=editorContent.value;
+        previewContent.innerHTML=md.render(editorText);
+
+    }
+    function changeHeading(){
+        headingPreview.innerHTML=headingEdit.value;
+    }
+    editorContent.addEventListener('input', changePreview)
+    headingEdit.addEventListener('input', changeHeading)
+
+    imgInp.onchange = evt => {
+      const [file] = imgInp.files
+      if (file) {
+        blah.src = URL.createObjectURL(file)
+      }
+    }
+</script>
+        {% else %}
+        <br>
+        <div class="alert alert-warning" role="alert">
+            It seems, that you are not authenticated, <a href="{% url "login" %}">log in</a> or <a
+                href="{% url "register" %}">register</a> first
+        </div>
+    {% endif %}
+{% endblock %}

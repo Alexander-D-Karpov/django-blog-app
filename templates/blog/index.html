@@ -1,0 +1,55 @@
+{% extends "blog/base_blog.html" %}
+
+{% block extra_head %}
+    <style>
+    .card {
+            border: 2px solid white;
+        }
+        .card:hover {
+            border: 2px solid #3E7DC0;
+        }
+        .card-img{
+            width: 100%!important;
+            height: 200px!important;
+            object-fit: cover;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <br>
+    <form class="d-flex" action="{% url "index" %}" method="get">
+        <input name="search" class="form-control me-2 m-2" placeholder="Search for posts" aria-label="Search">
+        <button class="btn btn-outline-success m-2" type="submit">Search</button>
+    </form>
+
+    {% if message %}
+        <h1>{{ message }}</h1>
+    {% endif %}
+    <div class="row m-2">
+        {% for post in posts %}
+            <div class="m-3">
+            <a style="text-decoration: none; color: black" href="{{ post.get_absolute_url }}">
+            <div class="card">
+                <div class="row g-0">
+                    <div class="col-md-2">
+                        {% if post.image %}
+                            <img alt="post image" src="{{ post.image.url }}" class="img-fluid col-md-2 card-img rounded-start">
+                        {%  endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ post.title }}</h5>
+                            <p class="card-text">{% if not post.isMD %} {{ post.body|truncatewords:20 }}{% endif %}</p>
+                            <p>Rating: {{ post.rating }} <i class="bi bi-star-fill"></i></p>
+                            <p class="card-text"><small class="text-muted">{{ post.date_pub|date:"d M Y" }} </small>
+                            <i class="bi bi-eye"></i> {{ post.post_views }}  <i class="bi bi-chat-dots"></i> {{ post.comments_sum }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </a>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}
